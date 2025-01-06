@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, List, Optional
 
+import dask.config
 from anyio.abc import TaskStatus
 
 # noinspection PyProtectedMember
@@ -14,11 +15,29 @@ from prefect.workers.base import (
     BaseWorkerResult,
 )
 
+from .credentials import CoiledCredentials
+
 if TYPE_CHECKING:
     from prefect.client.schemas import FlowRun
 
 
 class CoiledWorkerJobConfiguration(BaseJobConfiguration):
+    credentials: CoiledCredentials = Field(
+        title="Coiled API token",
+        default_factory=CoiledCredentials,
+        description=(
+            "The Coiled API token used to connect to Coiled. "
+            "If not provided credentials will be inferred from "
+            "the local environment."
+        ),
+    )
+    workspace: Optional[str] = Field(
+        default=None,
+        description=(
+            "The Coiled workspace to use. "
+            "If not provided the default Coiled workspace for your user will be used."
+        ),
+    )
     image: str = Field(
         default_factory=get_prefect_image_name,
         description="The image reference of a container image to use for created jobs. "
@@ -40,6 +59,22 @@ class CoiledWorkerJobConfiguration(BaseJobConfiguration):
 
 
 class CoiledVariables(BaseVariables):
+    credentials: CoiledCredentials = Field(
+        title="Coiled API token",
+        default_factory=CoiledCredentials,
+        description=(
+            "The Coiled API token used to connect to Coiled. "
+            "If not provided credentials will be inferred from "
+            "the local environment."
+        ),
+    )
+    workspace: Optional[str] = Field(
+        default=None,
+        description=(
+            "The Coiled workspace to use. "
+            "If not provided the default Coiled workspace for your user will be used."
+        ),
+    )
     image: str = Field(
         default_factory=get_prefect_image_name,
         description="The image reference of a container image to use for created jobs. "
@@ -109,19 +144,27 @@ class CoiledWorker(BaseWorker):
         )
 
         # submit the job to run on Coiled
-        run_info = run(
-            command=configuration.command,
-            container=configuration.image,
-            secret_env=configuration.env,
-            region=configuration.region,
-            vm_type=configuration.vm_types,
-            # arm=configuration.arm,  # TODO https://github.com/coiled/platform/issues/7530
-            cpu=configuration.cpu,
-            memory=configuration.memory,
-            gpu=configuration.gpu,
-            tag=tags,
-            logger=logger,
-        )
+        creds_config = {}
+        if configuration.credentials and configuration.credentials.api_token:
+            creds_config = {
+                "coiled.token": configuration.credentials.api_token.get_secret_value()
+            }
+
+        with dask.config.set(creds_config):
+            run_info = run(
+                command=configuration.command,
+                workspace=configuration.workspace,
+                container=configuration.image,
+                secret_env=configuration.env,
+                region=configuration.region,
+                vm_type=configuration.vm_types,
+                # arm=configuration.arm,  # TODO https://github.com/coiled/platform/issues/7530
+                cpu=configuration.cpu,
+                memory=configuration.memory,
+                gpu=configuration.gpu,
+                tag=tags,
+                logger=logger,
+            )
         job_id = run_info.get("job_id")
         identifier = str(job_id)
 
@@ -129,7 +172,10 @@ class CoiledWorker(BaseWorker):
             task_status.started(identifier)
 
         # wait for Coiled job to be done
-        job_state = await run_sync_in_worker_thread(wait_for_job_done, job_id=job_id)
+        with dask.config.set(creds_config):
+            job_state = await run_sync_in_worker_thread(
+                wait_for_job_done, job_id=job_id
+            )
 
         return CoiledWorkerResult(
             status_code=-1 if "error" in job_state else 0,
