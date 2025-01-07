@@ -10,6 +10,20 @@ To start using `prefect-coiled`:
 pip install prefect-coiled  # or `pip -e .` install from source 
 ```
 
+If you haven't used Coiled before, you'll need to create a Coiled account and log in:
+
+```bash
+coiled login
+```
+and then connect Coiled to your cloud account (AWS, Google Cloud, or Azure) where Coiled will run your flows.
+You can either use our interactive setup CLI:
+
+```bash
+coiled setup
+```
+
+or via the web app UI at https://cloud.coiled.io/settings/setup
+
 ## Starting a worker
 
 The worker polls a work pool for pending Prefect flows and then uses Coiled to run the flow in the cloud.
@@ -101,6 +115,9 @@ if __name__ == "__main__":
         job_variables={"memory": "16GiB"},  # use VM with 16GiB of memory for this flow
     )
 ```
+
+You can use the ``region``, ``cpu``, ``memory``, and ``gpu`` job variables to control the cloud hardware that your flow will run on.
+These match the arguments to the ``coiled batch run`` CLI documented at https://docs.coiled.io/user_guide/api.html#coiled-batch-run
 
 ## Run the flow
 
