@@ -54,7 +54,7 @@ class CoiledWorkerJobConfiguration(BaseJobConfiguration):
             "often it's best to specify cpu and/or memory and let Coiled determine appropriate VM types."
         ),
     )
-    # arm: Optional[bool] = Field(default=None)
+    arm: Optional[bool] = Field(default=None)
     cpu: Optional[int] = Field(
         default=None, description="Use a VM with this number of CPU (or vCPU) cores"
     )
@@ -120,7 +120,7 @@ class CoiledVariables(BaseVariables):
             "often it's best to specify cpu and/or memory and let Coiled determine appropriate VM types."
         ),
     )
-    # arm: Optional[bool] = Field(default=None)
+    arm: Optional[bool] = Field(default=None)
     cpu: Optional[int] = Field(
         default=None, description="Use a VM with this number of CPU (or vCPU) cores"
     )
@@ -203,7 +203,7 @@ class CoiledWorker(BaseWorker):
                 secret_env=configuration.env,
                 region=configuration.region,
                 vm_type=configuration.vm_types,
-                # arm=configuration.arm,  # TODO https://github.com/coiled/platform/issues/7530
+                arm=configuration.arm,
                 cpu=configuration.cpu,
                 memory=configuration.memory,
                 gpu=configuration.gpu,

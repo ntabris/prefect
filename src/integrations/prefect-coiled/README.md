@@ -112,11 +112,11 @@ if __name__ == "__main__":
         name="my-coiled-deploy",
         work_pool_name="my-coiled-pool",
         image=DockerImage(name="prefect-docker-image", tag=arch, platform=f"linux/{arch}"),
-        job_variables={"memory": "16GiB"},  # use VM with 16GiB of memory for this flow
+        job_variables={"arm": True, "memory": "16GiB"},  # use VM with ARM cpu and 16GiB of memory for this flow
     )
 ```
 
-You can use the ``region``, ``cpu``, ``memory``, and ``gpu`` job variables to control the cloud hardware that your flow will run on.
+You can use the ``region``, ``arm``, ``cpu``, ``memory``, and ``gpu`` job variables to control the cloud hardware that your flow will run on.
 These match the arguments to the ``coiled batch run`` CLI documented at https://docs.coiled.io/user_guide/api.html#coiled-batch-run
 
 ## Run the flow
