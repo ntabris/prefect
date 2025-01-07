@@ -2,9 +2,7 @@ from typing import TYPE_CHECKING, List, Optional
 
 import dask.config
 from anyio.abc import TaskStatus
-
-# noinspection PyProtectedMember
-from pydantic import Field, PrivateAttr
+from pydantic import Field, PrivateAttr, field_validator
 
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
 from prefect.utilities.dockerutils import get_prefect_image_name
@@ -56,6 +54,17 @@ class CoiledWorkerJobConfiguration(BaseJobConfiguration):
     gpu: Optional[bool] = Field(default=None)
 
     _job_name: str = PrivateAttr(default=None)
+
+    @field_validator("memory")
+    @classmethod
+    def _ensure_valid_memory(cls, value):
+        try:
+            dask.utils.parse_bytes(value)
+            return value
+        except ValueError:
+            raise ValueError(
+                f"{value!r} is not a valid memory value. You should specify memory as a string such as '16 GiB'."
+            )
 
 
 class CoiledVariables(BaseVariables):
