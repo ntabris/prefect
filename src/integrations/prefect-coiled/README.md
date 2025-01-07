@@ -12,13 +12,26 @@ pip install prefect-coiled  # or `pip -e .` install from source
 
 ## Starting a worker
 
-When running a local worker, you can either have the worker implicitly pick up the Coiled API token
+The worker polls a work pool for pending Prefect flows and then uses Coiled to run the flow in the cloud.
+
+When running the worker, you can either have the worker implicitly pick up your Coiled API token
 (from your local Coiled config file or environment variables),
-or you can specify the API token using a Prefect credentials block for the work pool.
+or you can specify the API token using a Prefect credentials block set for the work pool.
 
-### Local worker with locally configured Coiled API token
+### Locally configured Coiled API token
 
-If you're using local Coiled credentials for a worker that will run locally, you can start the worker like this:
+If you've already used the Coiled CLI or Python API, you're probably already logged in locally,
+and a locally running Coiled Prefect worker will use your existing log in.
+You can log in to Coiled by running
+
+```bash
+coiled login
+```
+
+or by setting your Coiled API token using the ``DASK__COILED_TOKEN`` environment variable.
+See https://docs.coiled.io/user_guide/setup/tokens.html for more details.
+
+Once you have a Coiled API token set where you'll be running the worker, you can start the worker like this:
 
 ```bash
 prefect worker start -p "my-coiled-pool" --type "coiled"
@@ -26,7 +39,9 @@ prefect worker start -p "my-coiled-pool" --type "coiled"
 
 ### Coiled API token specified through Prefect credentials block
 
-Things are more complicated if you need to specify the Coiled API token to use for the work pool.
+Things are more complicated if you need to specify the Coiled API token to use for the work pool,
+but this does give you more flexibility and allows you to change the Coiled credentials
+for a work pool without restarting the worker.
 
 You'll need to create a credentials block, like so:
 
@@ -46,11 +61,13 @@ This will return a URL to the work pool. Follow this URL, click the "..." menu a
 Find the "CoiledCredentials" field and select the "coiled-creds" that you created before creating the work pool.
 Save the pool.
 
-Now, you can start a worker for this pull and it will use the credentials from the credentials block when the worker uses Coiled:
+Now, you can start a worker for this pool:
 
 ```bash
 prefect worker start -p "my-coiled-pool"
 ```
+
+The worker will use the credentials from the credentials block when running flows via Coiled.
 
 ## Create a deployment from a flow
 
