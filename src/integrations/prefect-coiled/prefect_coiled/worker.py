@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import dask.config
 from anyio.abc import TaskStatus
@@ -47,11 +47,29 @@ class CoiledWorkerJobConfiguration(BaseJobConfiguration):
         description="The region in which to run the job on Coiled; by default uses default region from Coiled workspace",
     )
 
-    vm_types: Optional[List[str]] = Field(default=None)
+    vm_types: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "List of specific VM type(s) to use; "
+            "often it's best to specify cpu and/or memory and let Coiled determine appropriate VM types."
+        ),
+    )
     # arm: Optional[bool] = Field(default=None)
-    cpu: Optional[int] = Field(default=None)
-    memory: Optional[str] = Field(default=None)
-    gpu: Optional[bool] = Field(default=None)
+    cpu: Optional[int] = Field(
+        default=None, description="Use a VM with this number of CPU (or vCPU) cores"
+    )
+    memory: Optional[str] = Field(
+        default=None,
+        description="Use a VM with this amount of memory; specify as a string such as '16 GiB'",
+    )
+    gpu: Optional[bool] = Field(
+        default=None, description="Use a VM with NVIDIA GPU available"
+    )
+
+    additional_coiled_options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Dictionary of any additional parameters to pass as keyword arguments for coiled.batch.run()",
+    )
 
     _job_name: str = PrivateAttr(default=None)
 
@@ -92,14 +110,32 @@ class CoiledVariables(BaseVariables):
     )
     region: Optional[str] = Field(
         default=None,
-        description="The region in which to run the job on Coiled",
+        description="The region in which to run the job on Coiled; by default uses default region from Coiled workspace",
     )
 
-    vm_types: Optional[List[str]] = Field(default=None)
-    # arm: Optional[bool] = Field(default=None)  # TODO https://github.com/coiled/platform/issues/7530
-    cpu: Optional[int] = Field(default=None)
-    memory: Optional[str] = Field(default=None)
-    gpu: Optional[bool] = Field(default=None)
+    vm_types: Optional[List[str]] = Field(
+        default=None,
+        description=(
+            "List of specific VM type(s) to use; "
+            "often it's best to specify cpu and/or memory and let Coiled determine appropriate VM types."
+        ),
+    )
+    # arm: Optional[bool] = Field(default=None)
+    cpu: Optional[int] = Field(
+        default=None, description="Use a VM with this number of CPU (or vCPU) cores"
+    )
+    memory: Optional[str] = Field(
+        default=None,
+        description="Use a VM with this amount of memory; specify as a string such as '16 GiB'",
+    )
+    gpu: Optional[bool] = Field(
+        default=None, description="Use a VM with NVIDIA GPU available"
+    )
+
+    additional_coiled_options: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Dictionary of any additional parameters to pass as keyword arguments for coiled.batch.run()",
+    )
 
 
 class CoiledWorkerResult(BaseWorkerResult):
@@ -173,6 +209,7 @@ class CoiledWorker(BaseWorker):
                 gpu=configuration.gpu,
                 tag=tags,
                 logger=logger,
+                **(configuration.additional_coiled_options or {}),
             )
         job_id = run_info.get("job_id")
         identifier = str(job_id)
