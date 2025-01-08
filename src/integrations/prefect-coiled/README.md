@@ -85,11 +85,10 @@ The worker will use the credentials from the credentials block when running flow
 
 ## Create a deployment from a flow
 
-Then you can create a deployment which uses this pool by running something like this:
+Here's an example flow you might have in `readme_example.py`:
 
 ```python
 from prefect import flow, task
-from prefect.docker import DockerImage
 
 @task
 def foo(n):
@@ -105,21 +104,73 @@ def my_flow():
     X = foo.map(list(range(10)))
     do_something(X)
     return X
+```
 
-if __name__ == "__main__":
-    arch = "amd64"
-    my_flow.deploy(
-        name="my-coiled-deploy",
-        work_pool_name="my-coiled-pool",
-        image=DockerImage(name="prefect-docker-image", tag=arch, platform=f"linux/{arch}"),
-        job_variables={"arm": True, "memory": "16GiB"},  # use VM with ARM cpu and 16GiB of memory for this flow
-    )
+You can build and push a docker image with the code for this flow,
+or you can use Coiled's "automatic package sync" feature to make a Coiled software environment with all your local packages and any code (like `readme_example.py`) in your working directory. 
+
+Prefect has a Python API which supports building a docker image, and a YAML API which supports either approach.
+
+### Python API with Docker
+
+Every flow has a ``deploy()`` method which can create or update a Prefect deployment. Here's how you'd use this to deploy your flow:
+
+```python
+from prefect.docker import DockerImage
+from readme_example import my_flow
+
+arch = "amd64"
+my_flow.deploy(
+    name="my-coiled-deploy",
+    work_pool_name="my-coiled-pool",
+    image=DockerImage(name="prefect-docker-image", tag=arch, platform=f"linux/{arch}"),
+    job_variables={"arm": True, "memory": "16GiB"},  # use VM with ARM cpu and 16GiB of memory for this flow
+)
 ```
 
 You can use the ``region``, ``arm``, ``cpu``, ``memory``, and ``gpu`` job variables to control the cloud hardware that your flow will run on.
 These match the arguments to the ``coiled batch run`` CLI documented at https://docs.coiled.io/user_guide/api.html#coiled-batch-run
 
+### YAML API with Coiled package sync
+
+Here's an example ``prefect.yaml`` file that defines a deployment using Coiled package sync.
+
+```yaml
+name: prefect-worker
+prefect-version: 3.1.11
+
+build:
+- prefect_coiled.deployments.steps.build_package_sync_senv:
+    id: coiled_senv
+    arm: true
+
+pull:
+- prefect.deployments.steps.set_working_directory:
+    directory: /scratch/batch
+
+deployments:
+- name: coiled-package-sync-deploy
+  flow_name: flow-in-package-sync-senv
+  entrypoint: readme_example:my_flow
+  work_pool:
+    name: my-coiled-pool
+    job_variables:
+      arm: true
+      software: '{{ coiled_senv.name }}'
+```
+
+You can use the ``region``, ``arm``, ``cpu``, ``memory``, and ``gpu`` job variables to control the cloud hardware that your flow will run on.
+These match the arguments to the ``coiled batch run`` CLI documented at https://docs.coiled.io/user_guide/api.html#coiled-batch-run
+
+To create the deployment, you'll run
+
+```bash
+prefect deploy --prefect-file prefect.yaml
+```
+
 ## Run the flow
+
+Once the flow and deployment have been created and you have a Prefect Coiled worker running, you can run the flow:
 
 ```bash
 prefect deployment run 'my-flow/my-coiled-deploy'
