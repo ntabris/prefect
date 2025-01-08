@@ -5,7 +5,6 @@ from anyio.abc import TaskStatus
 from pydantic import Field, PrivateAttr, field_validator
 
 from prefect.utilities.asyncutils import run_sync_in_worker_thread
-from prefect.utilities.dockerutils import get_prefect_image_name
 from prefect.workers.base import (
     BaseJobConfiguration,
     BaseVariables,
@@ -36,11 +35,14 @@ class CoiledWorkerJobConfiguration(BaseJobConfiguration):
             "If not provided the default Coiled workspace for your user will be used."
         ),
     )
-    image: str = Field(
-        default_factory=get_prefect_image_name,
-        description="The image reference of a container image to use for created jobs. "
-        "If not set, the latest Prefect image will be used.",
-        examples=["docker.io/prefecthq/prefect:3-latest"],
+    software: Optional[str] = Field(
+        default=None, description="Name of Coiled software environment to use"
+    )
+    image: Optional[str] = Field(
+        default=None,
+        description=(
+            "Reference to Docker image, required if you aren't using Coiled software environment"
+        ),
     )
     region: Optional[str] = Field(
         default=None,
@@ -102,11 +104,14 @@ class CoiledVariables(BaseVariables):
             "If not provided the default Coiled workspace for your user will be used."
         ),
     )
-    image: str = Field(
-        default_factory=get_prefect_image_name,
-        description="The image reference of a container image to use for created jobs. "
-        "If not set, the latest Prefect image will be used.",
-        examples=["docker.io/prefecthq/prefect:3-latest"],
+    software: Optional[str] = Field(
+        default=None, description="Name of Coiled software environment to use"
+    )
+    image: Optional[str] = Field(
+        default=None,
+        description=(
+            "Reference to Docker image, required if you aren't using Coiled software environment"
+        ),
     )
     region: Optional[str] = Field(
         default=None,
@@ -199,7 +204,8 @@ class CoiledWorker(BaseWorker):
             run_info = run(
                 command=configuration.command,
                 workspace=configuration.workspace,
-                container=configuration.image,
+                container=configuration.image if not configuration.software else None,
+                software=configuration.software,
                 secret_env=configuration.env,
                 region=configuration.region,
                 vm_type=configuration.vm_types,
