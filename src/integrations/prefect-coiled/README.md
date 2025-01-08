@@ -149,8 +149,8 @@ pull:
     directory: /scratch/batch
 
 deployments:
-- name: coiled-package-sync-deploy
-  flow_name: flow-in-package-sync-senv
+- name: my-coiled-deploy
+  flow_name: my-coiled-flow
   entrypoint: readme_example:my_flow
   work_pool:
     name: my-coiled-pool
