@@ -5,6 +5,8 @@ build system for managing flows and deployments.
 To get started, follow along with [the deloyments tutorial](/tutorials/deployments/).
 """
 
+from __future__ import annotations
+
 import os
 from copy import deepcopy
 from pathlib import Path
@@ -17,6 +19,7 @@ from prefect.client.schemas.actions import DeploymentScheduleCreate
 from prefect.client.schemas.objects import ConcurrencyLimitStrategy
 from prefect.client.schemas.schedules import IntervalSchedule
 from prefect.utilities._git import get_git_branch, get_git_remote_origin_url
+from prefect.utilities.annotations import NotSet
 from prefect.utilities.filesystem import create_default_ignore_file
 from prefect.utilities.templating import apply_values
 
@@ -111,7 +114,9 @@ def create_default_prefect_yaml(
     return True
 
 
-def configure_project_by_recipe(recipe: str, **formatting_kwargs) -> dict:
+def configure_project_by_recipe(
+    recipe: str, **formatting_kwargs: Any
+) -> dict[str, Any] | type[NotSet]:
     """
     Given a recipe name, returns a dictionary representing base configuration options.
 
@@ -129,13 +134,13 @@ def configure_project_by_recipe(recipe: str, **formatting_kwargs) -> dict:
         raise ValueError(f"Unknown recipe {recipe!r} provided.")
 
     with recipe_path.open(mode="r") as f:
-        config = yaml.safe_load(f)
+        config: dict[str, Any] = yaml.safe_load(f)
 
-    config = apply_values(
+    templated_config = apply_values(
         template=config, values=formatting_kwargs, remove_notset=False
     )
 
-    return config
+    return templated_config
 
 
 def initialize_project(
@@ -275,6 +280,7 @@ def _save_deployment_to_prefect_file(
     push_steps: Optional[List[Dict]] = None,
     pull_steps: Optional[List[Dict]] = None,
     triggers: Optional[List[Dict]] = None,
+    sla: Optional[list[dict]] = None,
     prefect_file: Path = Path("prefect.yaml"),
 ):
     """
@@ -318,6 +324,9 @@ def _save_deployment_to_prefect_file(
 
         if triggers and triggers != parsed_prefect_file_contents.get("triggers"):
             deployment["triggers"] = triggers
+
+        if sla and sla != parsed_prefect_file_contents.get("sla"):
+            deployment["sla"] = sla
 
         deployments = parsed_prefect_file_contents.get("deployments")
         if deployments is None:

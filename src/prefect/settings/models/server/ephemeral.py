@@ -1,8 +1,9 @@
 from typing import ClassVar
 
-from pydantic import AliasChoices, AliasPath, ConfigDict, Field
+from pydantic import AliasChoices, AliasPath, Field
+from pydantic_settings import SettingsConfigDict
 
-from prefect.settings.base import PrefectBaseSettings, _build_settings_config
+from prefect.settings.base import PrefectBaseSettings, build_settings_config
 
 
 class ServerEphemeralSettings(PrefectBaseSettings):
@@ -10,7 +11,9 @@ class ServerEphemeralSettings(PrefectBaseSettings):
     Settings for controlling ephemeral server behavior
     """
 
-    model_config: ClassVar[ConfigDict] = _build_settings_config(("server", "ephemeral"))
+    model_config: ClassVar[SettingsConfigDict] = build_settings_config(
+        ("server", "ephemeral")
+    )
 
     enabled: bool = Field(
         default=False,
@@ -28,6 +31,6 @@ class ServerEphemeralSettings(PrefectBaseSettings):
         default=20,
         description="""
         The number of seconds to wait for the server to start when ephemeral mode is enabled.
-        Defaults to `10`.
+        Defaults to `20`.
         """,
     )

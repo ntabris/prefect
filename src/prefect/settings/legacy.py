@@ -28,11 +28,11 @@ class Setting:
             self.accessor: str = accessor
 
     @property
-    def name(self):
+    def name(self) -> str:
         return self._name
 
     @property
-    def is_secret(self):
+    def is_secret(self) -> bool:
         if self._type in _SECRET_TYPES:
             return True
         for secret_type in _SECRET_TYPES:
@@ -40,7 +40,7 @@ class Setting:
                 return True
         return False
 
-    def default(self):
+    def default(self) -> Any:
         return self._default
 
     def value(self: Self) -> Any:
@@ -123,7 +123,7 @@ def _get_settings_fields(
     settings: Type[BaseSettings], accessor_prefix: Optional[str] = None
 ) -> Dict[str, "Setting"]:
     """Get the settings fields for the settings object"""
-    settings_fields: Dict[str, Setting] = {}
+    settings_fields: dict[str, Setting] = {}
     for field_name, field in settings.model_fields.items():
         if inspect.isclass(field.annotation) and issubclass(
             field.annotation, PrefectBaseSettings

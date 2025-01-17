@@ -58,7 +58,7 @@ export const GlobalConcurrencyLimitsDeleteDialog = ({
 					</DialogTrigger>
 					<Button
 						variant="destructive"
-						onClick={() => handleOnClick(limit?.id)}
+						onClick={() => handleOnClick(limit.id)}
 						loading={isPending}
 					>
 						Delete
